@@ -5,14 +5,17 @@
 </template>
 
 <script>
-export default {
-  name: 'App'
-}
+import Vue from "vue";
+
+var app = new Vue({
+  name: "App",
+  el: "#app"
+});
 </script>
 
 <style>
 #app {
-  font-family: 'Avenir', Helvetica, Arial, sans-serif;
+  font-family: "Avenir", Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
