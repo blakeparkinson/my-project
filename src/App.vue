@@ -6,6 +6,9 @@
 
 <script>
 import Vue from "vue";
+import Vuetify from "vuetify"; // Import Vuetify to your project
+
+Vue.use(Vuetify); // Add Vuetify as a plugin
 
 var app = new Vue({
   name: "App",

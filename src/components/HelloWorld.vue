@@ -1,26 +1,32 @@
 <template>
-  <div class="hello">
-    <h1>{{ msg }}</h1>
-    <button v-on:click="create">Create Codes</button>
-    <ul v-if="showCodes">
-      <li v-for="item in productItems" v-bind:key="item.name" class="items">
-        <div>
-          <span>
-            <img v-bind:src="item.image" class="itmimg">
-          </span>
-          <span style="color:blue">{{item.name}}</span>
-          <barcode v-bind:value="item.code">Show this if the rendering fails.</barcode>
-        </div>
-      </li>
-    </ul>
-    <ul>
-      <li>
-        <div>
-          <img v-bind:src="gif">
-        </div>
-      </li>
-    </ul>
-  </div>
+  <v-layout>
+    <v-flex xs12 sm6 offset-sm3>
+      <v-card>
+        <v-container v-bind="{ [`grid-list-${size}`]: true }" fluid>
+          <v-layout row wrap>
+            <v-flex
+              v-for="n in productItems"
+              :key="n._id"
+              xs4
+              @mouseenter="hoverIn(n)"
+              @mouseleave="hoverOut(n)"
+              :class="{hovering: n.isHovering}"
+            >
+              <div class="overlay">
+                <div class="p-name">{{n.name}}</div>
+                <a :href="`/#/${n._id}`">
+                  <v-btn color="info">Generate Barcode</v-btn>
+                </a>
+              </div>
+              <v-card flat tile>
+                <v-img :src="urlFromImage(n.techpack_images[0])" height="150px"></v-img>
+              </v-card>
+            </v-flex>
+          </v-layout>
+        </v-container>
+      </v-card>
+    </v-flex>
+  </v-layout>
 </template>
 
 <script>
@@ -37,9 +43,11 @@ export default {
   },
   data() {
     return {
+      size: "sm",
       msg: "My Product Barcodes",
       productName: null,
       productImage: null,
+      images: [],
       gif: undefined,
       showCodes: false,
       products: [],
@@ -48,8 +56,7 @@ export default {
       shopifyRoute: "https://parkcurity.herokuapp.com/shopify",
       slackRoute: "https://parkcurity.herokuapp.com/slack",
       token:
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7Il9pZCI6IjVjMWQ0YzAyYzExODEzMDAxNjUwYjBhZSIsIm5hbWUiOiJWaWN0b3JpYSBUZXN0Q28iLCJlbWFpbCI6InZpY3RvcmlhbGJyZXdlckBnbWFpbC5jb20iLCJwaG9uZSI6IjU0MTk2ODYxNTEiLCJhdmF0YXIiOiIiLCJjb21wYW55IjoiNWMxZDRjMDExNGFjNGIwMDE2ODE4MDdmIiwicGhvbmVfdmVyaWZpZWQiOmZhbHNlLCJhY3RpdmUiOnRydWUsImxvY2FsZSI6ImVuX1VTIiwiZ3JvdXBzIjpbeyJsYWJlbF9jb2xvciI6IiM3MzdmZmEiLCJ1c2VycyI6W10sIl9pZCI6IjVjMWQ0YzAxMTRhYzRiMDAxNjgxODA4MCIsIm5hbWUiOiJBZG1pbiIsInBlcm1pc3Npb25zIjp7ImFkbWluIjp0cnVlfSwiY29tcGFueSI6IjVjMWQ0YzAxMTRhYzRiMDAxNjgxODA3ZiIsImNyZWF0ZWRBdCI6IjIwMTgtMTItMjFUMjA6MjQ6MzMuODkyWiIsInVwZGF0ZWRBdCI6IjIwMTgtMTItMjFUMjA6MjQ6MzMuODkyWiIsIl9fdiI6MH1dLCJsYW5ndWFnZV9vdmVycmlkZXMiOnt9fSwiaWF0IjoxNTU5OTM3OTc0fQ.DmWjursWGG4qKuW5sBUSC2XcMXk_vvUO2KGT4xMTNEc",
-      // brand: "5bf4456457cf55001f0ebb0e",
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7Il9pZCI6IjVjMWQ0YzAyYzExODEzMDAxNjUwYjBhZSIsIm5hbWUiOiJWaWN0b3JpYSBUZXN0Q28iLCJlbWFpbCI6InZpY3RvcmlhbGJyZXdlckBnbWFpbC5jb20iLCJwaG9uZSI6IjU0MTk2ODYxNTEiLCJhdmF0YXIiOiIiLCJjb21wYW55IjoiNWMxZDRjMDExNGFjNGIwMDE2ODE4MDdmIiwicGhvbmVfdmVyaWZpZWQiOmZhbHNlLCJhY3RpdmUiOnRydWUsImxvY2FsZSI6ImVuX1VTIiwiZ3JvdXBzIjpbeyJsYWJlbF9jb2xvciI6IiM3MzdmZmEiLCJ1c2VycyI6W10sIl9pZCI6IjVjMWQ0YzAxMTRhYzRiMDAxNjgxODA4MCIsIm5hbWUiOiJBZG1pbiIsInBlcm1pc3Npb25zIjp7ImFkbWluIjp0cnVlfSwiY29tcGFueSI6IjVjMWQ0YzAxMTRhYzRiMDAxNjgxODA3ZiIsImNyZWF0ZWRBdCI6IjIwMTgtMTItMjFUMjA6MjQ6MzMuODkyWiIsInVwZGF0ZWRBdCI6IjIwMTgtMTItMjFUMjA6MjQ6MzMuODkyWiIsIl9fdiI6MH1dLCJsYW5ndWFnZV9vdmVycmlkZXMiOnt9fSwiaWF0IjoxNTU5OTM3OTc0fQ.DmWjursWGG4qKuW5sBUSC2XcMXk_vvUO2KGT4xMTNEc", // brand: "5bf4456457cf55001f0ebb0e",
       pics: [
         "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRFzKEL_ITzrbBhjJt4baMP-3yaRUF0TMY3rRP7QPupBGVO3gES",
         "https://cnet3.cbsistatic.com/img/E_3uxOZR7-ryYQ1Uq6lEn1SFKTo=/970x0/2016/11/22/e4332ef1-a7fc-4cbc-ad05-5512e6d7d2ea/reindeer.jpg",
@@ -61,14 +68,40 @@ export default {
   },
   beforeMount() {
     this.getProducts();
+    this.getImages();
   },
   methods: {
+    hoverIn(item) {
+      item.isHovering = true;
+    },
+    hoverOut(item) {
+      item.isHovering = false;
+    },
+    urlFromImage(imageItem) {
+      if (imageItem && imageItem.image) {
+        const id = imageItem.image;
+        for (let image of this.images) {
+          if (image._id == id) {
+            return image.url;
+          }
+        }
+      }
+    },
+    async getImages() {
+      const resp = await axios.get(
+        `https://parkcurity.herokuapp.com/images?bbtoken=${this.token}`
+      );
+      this.images = resp.data.data;
+    },
     async getProducts() {
       const resp = await axios.get(
         `https://parkcurity.herokuapp.com/products?bbtoken=${this.token}`
       );
+      for (let item of resp.data.data) {
+        item.isHovering = false;
+      }
+
       this.productItems = resp.data.data;
-      console.log(this.productItems);
     },
     async create(event) {
       // const csv = require("csvtojson");
@@ -194,59 +227,32 @@ a {
 #r-list li {
   display: block;
 }
-.spin {
-  margin: 20px;
-  width: 100px;
-  height: 100px;
-  background: #f00;
-  -webkit-animation-name: spin;
-  -webkit-animation-duration: 4000ms;
-  -webkit-animation-iteration-count: infinite;
-  -webkit-animation-timing-function: linear;
-  -moz-animation-name: spin;
-  -moz-animation-duration: 4000ms;
-  -moz-animation-iteration-count: infinite;
-  -moz-animation-timing-function: linear;
-  -ms-animation-name: spin;
-  -ms-animation-duration: 4000ms;
-  -ms-animation-iteration-count: infinite;
-  -ms-animation-timing-function: linear;
-
-  animation-name: spin;
-  animation-duration: 4000ms;
-  animation-iteration-count: infinite;
-  animation-timing-function: linear;
+.v-card {
+  background: whitesmoke;
 }
-@-ms-keyframes spin {
-  from {
-    -ms-transform: rotate(0deg);
-  }
-  to {
-    -ms-transform: rotate(360deg);
-  }
+.hovering {
+  position: relative;
 }
-@-moz-keyframes spin {
-  from {
-    -moz-transform: rotate(0deg);
-  }
-  to {
-    -moz-transform: rotate(360deg);
-  }
+.overlay {
+  display: none;
 }
-@-webkit-keyframes spin {
-  from {
-    -webkit-transform: rotate(0deg);
-  }
-  to {
-    -webkit-transform: rotate(360deg);
-  }
+.hovering .overlay {
+  height: 100%;
+  display: block;
+  width: 100%;
+  background: black;
+  opacity: 0.85;
+  position: absolute;
+  z-index: 2;
 }
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.p-name {
+  color: white;
+  margin-top: 20px;
+  font-size: 30px;
+}
+.info {
+  margin-top: 10px;
+  background-color: #2196f3 !important;
+  border-color: #2196f3 !important;
 }
 </style>
