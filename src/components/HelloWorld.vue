@@ -247,6 +247,9 @@ a {
 }
 .p-name {
   color: white;
+  white-space: nowrap;
+  overflow-x: hidden;
+  text-overflow: ellipsis;
   margin-top: 20px;
   font-size: 30px;
 }
