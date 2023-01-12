@@ -21,7 +21,7 @@
     "request": "^2.88.0",
     "vue": "^2.5.2",
     "vue-barcode": "^1.2.0",
-    "vue-csv-import": "^2.3.3",
+    "vue-csv-import": "^2.5.0",
     "vue-resource": "^1.5.1",
     "vue-router": "^3.0.1",
     "vuetify": "^1.5.14"
